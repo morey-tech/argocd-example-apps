@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: kind-akuity  # Update to your cluster name.
+  name: # Update to your cluster name.
   namespace: argocd
   finalizers:
   - resources-finalizer.argocd.argoproj.io
