@@ -1,7 +1,7 @@
 namespace: argocd
 spec:
   destination:
-    name: kind-akuity
+    name: ""
   source:
-    repoURL: https://github.com/morey-tech/argocd-example-apps
-    targetRevision: HEAD
+    repoURL: ""
+    targetRevision: ""
