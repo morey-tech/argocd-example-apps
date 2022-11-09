@@ -13,3 +13,5 @@ spec:
     path: app-namespaces
     repoURL: {{ .Values.spec.source.repoURL }}
     targetRevision: {{ .Values.spec.source.targetRevision }}
+  syncPolicy:
+    automated: {}
