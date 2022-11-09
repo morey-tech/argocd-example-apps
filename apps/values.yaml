@@ -5,3 +5,7 @@ spec:
   source:
     repoURL: ""
     targetRevision: ""
+
+applications:
+- app-namespaces
+- helm-guestbook
