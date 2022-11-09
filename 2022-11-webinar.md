@@ -126,7 +126,7 @@ Once you have a fork of the repo, I recommend making a new branch to contain the
    ```
 9.  Confirm healthy in the Clusters dashboard.
 
-### Create the App of Apps in Argo CD
+### Create the App of Apps in Argo CD.
 1. Navigate back to the Argo CD UI, and click "NEW APP".
 2. In the top right, click "EDIT AS YAML".
 3. Paste the contents of `app-of-apps.yaml` in the root of the repo.
@@ -137,28 +137,56 @@ Once you have a fork of the repo, I recommend making a new branch to contain the
 8. Click on the card for the Application.
 9. In the top bar, click "SYNC" then "SYNCHRONIZE". This will instruct Argo CD to create the resources defined by the Application. Afterwards, all resources in the tree will show a green checkmark. Indicating that they are present in the cluster.
 
-### Enable auto-sync for the `app-namespaces` Application.
-1. On the `app-namespaces` Application resource, click the link button (arrow pointing out of the top right of a square). This will open the Application view for it.
-2.  In the top menu, click "APP DETAILS".
-3.  Under the "SYNC POLICY" section, click "ENABLE AUTO-SYNC". This will cause the application to immediately create the missing resources for the Application (i.e., the namespaces).
-   1. You can see this by clicking out of the App Details page and looking for the green checkmark on the resources.
-4.  To the right of the "SELF HEAL", click "ENABLE". This will ensure that if a resource is deleted in the cluster (i.e., drift from the desired state) that Argo CD will automatically recreate it. This is important for namespaces as they are required for the Application using that namespace.
-   2. We will not enable "PRUNE RESOURCES" because the Application is managing namespace resources, who's deletion could be catostraophic. If you are confident in the processes surrounding changes to your environment configuratin repo, then this could be enabled allowing for automatic clean-up.
-5.  To demonstrate the auto-heal functionality, from your terminal use `kubectl` to delete the `helm-guestbook` namespace.
+### Change the target revision for the App-of-Apps Application.
+Currently the parent Application is tracking the `HEAD` of the repo. You will update this to track the branch you created after forking the repo. This will cause your cluster's environment to reflect your feature branch instead of `HEAD`.
+
+<!-- 1. On the `<cluster-name>` Application resource, click the link button (arrow pointing out of the top right of a square). This will open the Application view for it. -->
+1.  In the top menu, click "APP DETAILS".
+2.  In the top right, click "EDIT".
+3.  Update the "TARGET REVISION" to the branch created after fokring the repo.
+4.  In the top left, click "SAVE".
+5.  In the top right of the App Details pane, click the X to close it.
+6.  The CURRENT SYNC STATUS will show "OutOfSync" indicating that it is out-of-sync.
+    1.  The Application and Application resources will show a yellow circle with a white arrow.
+
+We are using the `targetRevision` of the Parent Application as a Helm parameter, to set the targetRevision of the child Applications (rendered by the Helm chart). When the targetRevision is changed on the parent Application, it will template the Helm chart with the new value. The child Applications will become out-of-sync due to the new targetRevision.
+- You can see the diff by going to the top left corner and clicking "APP DIFF".
+  ```diff
+        path: helm-guestbook
+      repoURL: 'https://github.com/<your-username>/argocd-example-apps'
+  --  targetRevision: HEAD
+  ++  targetRevision: '<your-feature-branch>'
+  status:
+    health:
+  ```
+### Enable auto-sync for the App-of-Apps Application.
+To automate the deployment of changes to the parent Application, you will enable the automated sync policy. This will cause any change to the Application source in the repo or Application itself, to be applied immediately.
+
+1.  In the top menu, click "APP DETAILS".
+2.  Under the "SYNC POLICY" section, click "ENABLE AUTO-SYNC".
+    1.  This will cause the application to immediately create the missing resources for the Application (i.e., the namespaces).
+3.  In the top right of the App Details pane, click the X to close it.
+   <!-- 1. You can see this by clicking out of the App Details page and looking for the green checkmark on the resources. -->
+<!-- 3.  To the right of the "SELF HEAL", click "ENABLE". This will ensure that if a resource is deleted in the cluster (i.e., drift from the desired state) that Argo CD will automatically recreate it. This is important for namespaces as they are required for the Application using that namespace. -->
+   <!-- 2. We will not enable "PRUNE RESOURCES" because the Application is managing other Application resources, who's deletion could be *catostraophic*. If you are confident in the processes surrounding changes to your environment configuratin repo, then this could be enabled allowing for automatic clean-up. -->
+<!-- 6.  To demonstrate the auto-heal functionality, from your terminal use `kubectl` to delete the `helm-guestbook` namespace.
    ```
    % kubectl delete ns/helm-guestbook
    namespace "helm-guestbook" deleted
    ```
-   - You'll notice that the namespace has been recreated by Argo CD (see the recent age compared to the other namespaces).
+   - You'll notice that the namespace has been recreated by Argo CD (see the recent age compared to the other namespaces). -->
 
 ### Demonstrate Application auto-sync via Git.
-1. Navigate to `https://github.com/<your-username>/argocd-example-apps/blob/<branch-name>/helm-guestbook/values.yaml#L9`.
+1. Navigate to `file and line`.
 2. In the top right of the file, click the pencil icon to edit.
-3. Update the `image.tag` value to be `0.2`.
-4. A commit message. For example `feat: release 0.2`.
+3. Add `kustomize-guestbook` to the `applications` list.
+4. A commit message. For example `chore: deploy kustomize-guestbook to <cluster-name>`.
 5. In the bottom left, click "Commit changes".
-6. 
+6. Switch back to the Argo CD UI.
 
 ### [bonus] Delete the cluster, recreate it, and deploy the agent to bootstrap it.
  - This could also demonstrate how the set up could easily be replicated in a hosted K8s environment with no additional configuration for the Applications or the firewall of the hosted environment.
  - The control plane allows for the cluster to be bootstrapped by simply deploying the Akuity agent.
+
+
+### sync and prune from the ui example?
