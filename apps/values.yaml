@@ -7,5 +7,5 @@ spec:
     targetRevision: ""
 
 applications:
-- app-namespaces
 - helm-guestbook
+- kustomize-guestbook
