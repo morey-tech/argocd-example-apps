@@ -18,4 +18,6 @@ spec:
     targetRevision: {{ $.Values.spec.source.targetRevision }}
   syncPolicy:
     automated: {}
+    syncOptions:
+    - CreateNamespace=true
 {{- end }}
