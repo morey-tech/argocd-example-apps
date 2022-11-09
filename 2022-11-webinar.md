@@ -1,16 +1,36 @@
 # Creating a fully-managed Kubernetes GitOps platform with Argo CD
 
+In this hour-long hands-on lab, we will set up a repo to contain the environment configuration, create a Kubernetes cluster, and provision an Argo CD instance. Then use Argo CD to deploy Applications from the repo to the cluster. Finally, we will demonstrate the auto-sync and auto-heal functionality of the Applications.
+
+Ultimately, you will have a Kubernetes cluster, with Applications deployed using an Argo CD control plane.
+
 Argo CD version: v2.5.1
 Kubernertes Version: v1.25.2
 
 ## Lab
 ### Intro
-what is: Kubernetes, GitOps, Argo CD, Akuity.
+Use these links to learn what is: [Kubernetes](https://youtu.be/4ht22ReBjno?t=164), [GitOps](https://opengitops.dev/), [Argo CD](https://argo-cd.readthedocs.io/en/stable/#what-is-argo-cd), [Akuity](https://akuity.io/).
+
+### Pre-requisetes
+The lab requires that you have:
+- a [GitHub](https://github.com/) Account - This will be used to create the repo for the environment configuration and for creating an account on the [Akuity Platform](https://akuity.io/akuity-platform/).
+- the Kubernetes command-line tool, [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) - Will be used for interacting with the cluster directly.
+- a Kubernetes cluster with Cluster Admin access (to create namespaces and cluster roles) or;
+- [Docker Desktop](https://duckduckgo.com/?q=docker+desktop+install) and [kind](https://kind.sigs.k8s.io/docs/user/quick-start/#installation) installed on your local machine.
+- [egress traffic](https://www.webopedia.com/definitions/egress-traffic/) allowed from the Kubernetes cluster to the internet.
+
+To prepare for the lab scenario, you can think of what to name your **organization** and **environment**. For example, my organization could be named “[ACME Co.](https://en.wikipedia.org/wiki/Acme_Corporation)” and my environment “southwest”.
 
 ### Fork this repo.
-The lab will use this repo and files in it as the environment configuration for the Kubernetes cluster.
+The lab will use [this repo](https://github.com/morey-tech/argocd-example-apps) and files in it as the environment configuration for the Kubernetes cluster (i.e., the "GitOps repo").
 
-`https://github.com/morey-tech/argocd-example-apps`
+You will start by [forking this repo to your Github account](https://github.com/morey-tech/argocd-example-apps/fork). Here are [the docs on how to fork a repo](https://docs.github.com/en/get-started/quickstart/fork-a-repo#forking-a-repository), if needed.
+
+Once you have a fork of the repo, I recommend making a new branch to contain the changes made during this lab. For simplicity, use the current date.
+1. Navigate to `https://github.com/<your-username>/argocd-example-apps/branches`
+2. In the top right, click "New branch".
+3. Set the branch name to the current date (e.g. 2022-11-08).
+4. In the bottom right, click "Create branch".
 
 ### Create a Kubernetes cluster locally.
 1. Run `docker run hello-world` to check that docker is running and that you have access. You should the following:
@@ -131,7 +151,13 @@ The lab will use this repo and files in it as the environment configuration for 
    ```
    - You'll notice that the namespace has been recreated by Argo CD (see the recent age compared to the other namespaces).
 
-### Enable auto-sync to Application. Make change to it via Git.
+### Demonstrate Application auto-sync via Git.
+1. Navigate to `https://github.com/<your-username>/argocd-example-apps/blob/<branch-name>/helm-guestbook/values.yaml#L9`.
+2. In the top right of the file, click the pencil icon to edit.
+3. Update the `image.tag` value to be `0.2`.
+4. A commit message. For example `feat: release 0.2`.
+5. In the bottom left, click "Commit changes".
+6. 
 
 ### [bonus] Delete the cluster, recreate it, and deploy the agent to bootstrap it.
  - This could also demonstrate how the set up could easily be replicated in a hosted K8s environment with no additional configuration for the Applications or the firewall of the hosted environment.
