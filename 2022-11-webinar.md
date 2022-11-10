@@ -5,7 +5,8 @@ In this hour-long hands-on lab, we will set up a repo to contain the environment
 Ultimately, you will have a Kubernetes cluster, with Applications deployed using an Argo CD control plane.
 
 Argo CD version: v2.5.1
-Kubernertes Version: v1.25.2
+Kubernertes version: v1.25.2
+kind version: v0.16.0
 
 ## Lab
 ### Intro
@@ -19,47 +20,70 @@ The lab requires that you have:
 - [Docker Desktop](https://duckduckgo.com/?q=docker+desktop+install) and [kind](https://kind.sigs.k8s.io/docs/user/quick-start/#installation) installed on your local machine.
 - [egress traffic](https://www.webopedia.com/definitions/egress-traffic/) allowed from the Kubernetes cluster to the internet.
 
-To prepare for the lab scenario, you can think of what to name your **organization** and **environment**. For example, my organization could be named “[ACME Co.](https://en.wikipedia.org/wiki/Acme_Corporation)” and my environment “southwest”.
+To prepare for the lab scenario, you can think of what to name your *organization* and *environment*. For example, my *organization* could be named “[ACME Co.](https://en.wikipedia.org/wiki/Acme_Corporation)” and my *environment* “southwest”.
+- The *organization* name will be used for setting up your account on the Akuity Platform.
+- The *environment* name will be used for the cluster and the Application in Argo CD.
+
+Anywhere you see text in the format `<...>`, this indicates that you need to replace it with the value relevant to your scenario. Using my scenario for example:
+- In `https://github.com/<github-username>/argocd-example-apps`, I would replace `<github-username>` with `morey-tech`.
+- 
 
 ### Fork this repo.
 The lab will use [this repo](https://github.com/morey-tech/argocd-example-apps) and files in it as the environment configuration for the Kubernetes cluster (i.e., the "GitOps repo").
 
-You will start by [forking this repo to your Github account](https://github.com/morey-tech/argocd-example-apps/fork). Here are [the docs on how to fork a repo](https://docs.github.com/en/get-started/quickstart/fork-a-repo#forking-a-repository), if needed.
+You will start by [forking](https://docs.github.com/en/get-started/quickstart/fork-a-repo#forking-a-repository) this repo to your Github account. 
+1. Click [this link](https://github.com/morey-tech/argocd-example-apps/fork).
+2. Ensure the desired "Owner" is selected (e.g., your personal account and not an org).
+3. Then click "Create fork".
 
-Once you have a fork of the repo, I recommend making a new branch to contain the changes made during this lab. For simplicity, use the current date.
-1. Navigate to `https://github.com/<your-username>/argocd-example-apps/branches`
+Once you have a fork of the repo, create a new branch to contain the changes made during this lab. For simplicity, name it using the current date.
+1. Navigate to `https://github.com/<github-username>/argocd-example-apps/branches`
 2. In the top right, click "New branch".
-3. Set the branch name to the current date (e.g. 2022-11-08).
-4. In the bottom right, click "Create branch".
+3. Set the "Branch name" to the current date (e.g. `2022-11-08`).
+4. In the bottom right of the panel, click "Create branch".
 
 ### Create a Kubernetes cluster locally.
-1. Run `docker run hello-world` to check that docker is running and that you have access. You should the following:
+If you brought your own Kubernetes cluster to the lab, you can skip this section.
+
+Otherwise, you will be creating one on your local mahcine using `kind`.
+
+1. Run `docker run hello-world` to check that Docker is running and that you have access. You should the following:
    ```
    Hello from Docker!
    This message shows that your installation appears to be working correctly.
    ```
-2. Run `kubectl version` to check that it is installed.
+2. Run `kubectl version` to check that `kubectl` is installed.
    ```
    Client Version: version.Info{Major:"1", Minor:"25", GitVersion:"v1.25.2", GitCommit:"5835544ca568b757a8ecae5c153f317e5736700e", GitTreeState:"clean", BuildDate:"2022-09-21T14:33:49Z", GoVersion:"go1.19.1", Compiler:"gc", Platform:"darwin/arm64"}
    Kustomize Version: vXX.XX.XX
    ```
-   - You may also see a message indicating that it couldn't connect to the server to retrive it's version. This happens if your kubectl context is unset. It defaults to connecting to a cluster on localhost which will fail if a cluster is not present. This is okay for now since, we will be creating the cluster later in this section.
+   - You may also see a message indicating that it couldn't connect to the server to retrive it's version. This happens if your kubectl context is unset, defaulting to connecting to a cluster on localhost which will fail if a cluster is not present, or if your context is set to a cluster that is not available.
+
+    This is okay for now since, we will be creating the cluster later in this section.
       ```
       The connection to the server localhost:8080 was refused - did you specify the right host or port?
       ```
-3. Run `kind version` to check that it is installed.
+3. Run `kind version` to check that `kind` is installed.
    ```
    kind v0.16.0 go1.19.1 darwin/arm64
    ```
 4. Copy the `kind-cluster.yaml` from the repo fork to a local file.
-5. Run `kind create cluster --config <path/to/config> --name <cluster-name>` to create the cluster.
+   ```
+   curl https://raw.githubusercontent.com/<github-username>/argocd-example-apps/main/kind-cluster.yaml > kind-cluster.yaml
+   ```
+5. Run the following commands to create the cluster.
    ```
    export CONFIG=./kind-cluster.yaml
    export CLUSTER_NAME=morey-tech
    kind create cluster --config $CONFIG --name $CLUSTER_NAME
+   # or
+   CLUSTER_NAME=morey-tech kind create cluster --config ./kind-cluster.yaml --name $CLUSTER_NAME
+
+   kind create cluster --config ./kind-cluster.yaml --name <environment-name>
    ```
+   You should see the follow output:
    ```
-   Creating cluster "morey-tech" ...
+   Creating cluster "<environment-name>" ...
    ✓ Ensuring node image (kindest/node:v1.25.2) 🖼
    ✓ Preparing nodes 📦 📦 📦 📦  
    ✓ Writing configuration 📜 
@@ -67,51 +91,67 @@ Once you have a fork of the repo, I recommend making a new branch to contain the
    ✓ Installing CNI 🔌 
    ✓ Installing StorageClass 💾 
    ✓ Joining worker nodes 🚜 
-   Set kubectl context to "kind-morey-tech"
+   Set kubectl context to "kind-<environment-name>"
    You can now use your cluster with:
 
-   kubectl cluster-info --context kind-morey-tech
+   kubectl cluster-info --context kind-<environment-name>
 
    Thanks for using kind! 😊
    ```
 6. Check that the cluster is working by running `kubectl get nodes`.
    ```
    % kubectl get nodes
-   NAME                            STATUS   ROLES           AGE   VERSION
-   morey-tech-control-plane   Ready    control-plane   74s   v1.25.2
-   morey-tech-worker          Ready    <none>          54s   v1.25.2
-   morey-tech-worker2         Ready    <none>          54s   v1.25.2
-   morey-tech-worker3         Ready    <none>          54s   v1.25.2
+   NAME                               STATUS   ROLES           AGE   VERSION
+   <environment-name>-control-plane   Ready    control-plane   74s   v1.25.2
+   <environment-name>-worker          Ready    <none>          54s   v1.25.2
+   <environment-name>-worker2         Ready    <none>          54s   v1.25.2
+   <environment-name>-worker3         Ready    <none>          54s   v1.25.2
    ```
-### Launch an Argo CD instance.
-1. Create an account on the Akuity Platform.
-2. Create an organization.
+    - Does kind always update the kubectl context? Maybe check that too
 
-3. On the sidebar, click "Argo CD".
-4. In the top right, click "Create".
-5. Set the "Instance Name" to `cluster-manager`.
-6. Select the Version correisponding to `v2.5`.
-7. Click "Create".
-8. For the Argo CD instance, click "Settings".
-9. In the "General" section, find "Declarative Management" and enable it by clicking the toggle.
-10. In the top right, click "Save".
-11. On the inner sidebar, under "Security & Access", click "System Accounts".
-12. Enable the "Admin Account" by clicking the toggle, and clicking "Confirm"
-13. Then for the `admin` user, click "Set Password".
-14. To get the password, click "Copy".
+### Launch an Argo CD instance.
+1. Create an account on the [Akuity Platform](https://akuity.io/signup).
+2. To log in with GitHub SSO, click "Continute with GitHub".
+   1. You can also use Google SSO or a email and password combo. For the sake of the lab, I'm assuming you will be using GitHub.
+3. Click "Authorize akuityio".
+4. Create an organization by clicking "create or join" in the information bulletin.
+5. In the top right, click "New organization".
+6. Enter your "Organization Name" and click "Create"
+
+7. Near the top of the sidebar, click "Argo CD".
+8. In the top right, click "Create".
+9. Set the "Instance Name" to `cluster-manager`.
+10. Under the Version section, click the option correisponding to `v2.5`.
+11. Click "Create".
+12. In the dashboard the Argo CD instance, click "Settings".
+13. In the "General" section, find "Declarative Management" and enable it by clicking the toggle.
+    1.  This enables using the Akuity Platform to host the Application CRs generated when using the App of Apps pattern or ApplicationSets. We will demonstrate this later in the lab.
+14. In the top right, click "Save".
+15. On the inner sidebar, under "Security & Access", click "System Accounts".
+16. Enable the "Admin Account" by clicking the toggle, and clicking "Confirm" on the prompt.
+17. Then for the `admin` user, click "Set Password".
+18. To get the password, click "Copy".
    - If the copy option does not appear, click "Regenerate Password" and then "Copy". Note, this will invalidate any other sessions for the `admin` user.
 15. In the bottom right of the Set password prompt, hit "Close"
-16. In the top, next to the Argo CD instance name and status, click the instance URL.
-17. Log into the Argo CD UI with the username `admin` and the password copied earlier
+16. In the top, next to the Argo CD instance name and status, click the instance URL (e.g., `<uuid>.cd.akuity.cloud`). This will open the Argo CD login page.
+17.  Enter the username `admin` and the password copied previously.
+
+You will be presented with the Argo CD Applications dashboard.
 
 ### Deploy an agent to the cluster.
-1. Back on the Akuity Platform in the top left of the dashboard for the Argo CD instance, click "Clusters".
-2. Click "Connect a cluster" in the Clusters dashboard for the Argo CD instance.
-3. Enter the "Cluster Name".
+1. Back on the Akuity Platform, in the top left of the dashboard for the Argo CD instance, click "Clusters".
+2. In the top right, click "Connect a cluster".
+3. Enter your *environment* name as the "Cluster Name".
 4. In the bottom right, Click "Connect Cluster".
-5. To get the agent install command, click "Copy to Clipboard" then, in the bottom right, "Done".
-6. Open your terminal and ensure that `kubectl` is connected to the correct cluster. `kubectl config current-context`
+5. To get the agent install command, click "Copy to Clipboard". Then, in the bottom right, "Done".
+6. Open your terminal and ensure that `kubectl` is connected to the correct cluster. 
+    ```
+    % kubectl config current-context
+    kind-<env-name>
+    ```
+    - This output assumes you are using `kind`.
 7. Paste and run the command against the cluster.
+   1. This will create the `akuity` namespace and deploy the resources for the Akuity Agent.
 8. Check the pods in the `akuity` namespace. Wait for the `Running` status on all of the pods (apprx. 1 minute).
    ```
    % kubectl get pods -n akuity
@@ -124,18 +164,22 @@ Once you have a fork of the repo, I recommend making a new branch to contain the
    argocd-repo-server-<replicaset-id>-<pod-id>                 1/1     Running   0          64s
    argocd-repo-server-<replicaset-id>-<pod-id>                 1/1     Running   0          64s
    ```
-9.  Confirm healthy in the Clusters dashboard.
+   - Re-run the command to check for updates on the pod statuses.
+9.  Back on the Clusters dashboard, confirm that the cluster shows a green heart before the name, indicating a healthy status.
 
 ### Create the App of Apps in Argo CD.
 1. Navigate back to the Argo CD UI, and click "NEW APP".
 2. In the top right, click "EDIT AS YAML".
 3. Paste the contents of `app-of-apps.yaml` in the root of the repo.
-4. Update `metadata.name` to match your cluster name.
+4. Update `metadata.name` to match your environment name (i.e., cluster name).
 5. Update `spec.source.repoURL` to match your repo name.
 6. Click "SAVE"
-7. Review settings in Wizard translated from the YAML, then click "CREATE".
-8. Click on the card for the Application.
-9. In the top bar, click "SYNC" then "SYNCHRONIZE". This will instruct Argo CD to create the resources defined by the Application. Afterwards, all resources in the tree will show a green checkmark. Indicating that they are present in the cluster.
+7. Review the settings translated from YAML in Wizard. Then, in the top left, click "CREATE".
+8. Click on the Application card titled `argocd/<cluster-name>`.
+   1. In this state, the Application resource tree shows what was generated from the source repo URL and path defined. Because auto-sync is disable, the resources does not exist in the destination yet.
+9.  In the top bar, click "SYNC" then "SYNCHRONIZE". This will instruct Argo CD to create the resources defined by the Application. Afterwards, all resources in the tree will show a green checkmark. Indicating that they are present in the cluster.
+
+Should auto-sync be enabled for the children applications from the start?
 
 ### Change the target revision for the App-of-Apps Application.
 Currently the parent Application is tracking the `HEAD` of the repo. You will update this to track the branch you created after forking the repo. This will cause your cluster's environment to reflect your feature branch instead of `HEAD`.
@@ -144,12 +188,10 @@ Currently the parent Application is tracking the `HEAD` of the repo. You will up
 1.  In the top menu, click "APP DETAILS".
 2.  In the top right, click "EDIT".
 3.  Update the "TARGET REVISION" to the branch created after fokring the repo.
-4.  In the top left, click "SAVE".
+4.  In the top right, click "SAVE".
 5.  In the top right of the App Details pane, click the X to close it.
 6.  The CURRENT SYNC STATUS will show "OutOfSync" indicating that it is out-of-sync.
     1.  The Application and Application resources will show a yellow circle with a white arrow.
-
-We are using the `targetRevision` of the Parent Application as a Helm parameter, to set the targetRevision of the child Applications (rendered by the Helm chart). When the targetRevision is changed on the parent Application, it will template the Helm chart with the new value. The child Applications will become out-of-sync due to the new targetRevision.
 - You can see the diff by going to the top left corner and clicking "APP DIFF".
   ```diff
         path: helm-guestbook
@@ -159,6 +201,8 @@ We are using the `targetRevision` of the Parent Application as a Helm parameter,
   status:
     health:
   ```
+
+We are using the `targetRevision` of the Parent Application as a Helm parameter, to set the `targetRevision` of the child Applications (rendered by the Helm chart). When the `targetRevision` is changed on the parent Application, it will template the Helm chart with the new value. The child Applications will become out-of-sync due to their new `targetRevision`.
 ### Enable auto-sync for the App-of-Apps Application.
 To automate the deployment of changes to the parent Application, you will enable the automated sync policy. This will cause any change to the Application source in the repo or Application itself, to be applied immediately.
 
