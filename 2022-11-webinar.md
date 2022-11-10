@@ -33,7 +33,7 @@ Once you have a fork of the repo, I recommend making a new branch to contain the
 4. In the bottom right, click "Create branch".
 
 ### Create a Kubernetes cluster locally.
-1. Run `docker run hello-world` to check that docker is running and that you have access. You should the following:
+1. Run `docker run hello-world` to check that docker is running and that you have access. You should see the following:
    ```
    Hello from Docker!
    This message shows that your installation appears to be working correctly.
@@ -86,7 +86,6 @@ Once you have a fork of the repo, I recommend making a new branch to contain the
 ### Launch an Argo CD instance.
 1. Create an account on the Akuity Platform.
 2. Create an organization.
-
 3. On the sidebar, click "Argo CD".
 4. In the top right, click "Create".
 5. Set the "Instance Name" to `cluster-manager`.
