@@ -28,13 +28,15 @@ Anywhere you see text in the format `<...>`, this indicates that you need to rep
 - In `https://github.com/<github-username>/argocd-example-apps`, I would replace `<github-username>` with `morey-tech`.
 - 
 
-### Fork this repo.
-The lab will use [this repo](https://github.com/morey-tech/argocd-example-apps) and files in it as the environment configuration for the Kubernetes cluster (i.e., the "GitOps repo").
+### 1. Fork this repo.
+The lab will use this repo and files in it as the environment configuration for the Kubernetes cluster (i.e., the "GitOps repo").
 
-You will start by [forking](https://docs.github.com/en/get-started/quickstart/fork-a-repo#forking-a-repository) this repo to your Github account. 
+You will start by forking this repo to your Github account. 
 1. Click [this link](https://github.com/morey-tech/argocd-example-apps/fork).
 2. Ensure the desired "Owner" is selected (e.g., your personal account and not an org).
 3. Then click "Create fork".
+
+<!-- Need to remove argocd-example-apps repo as parent -->
 
 Once you have a fork of the repo, create a new branch to contain the changes made during this lab. For simplicity, name it using the current date.
 1. Navigate to `https://github.com/<github-username>/argocd-example-apps/branches`
@@ -42,7 +44,7 @@ Once you have a fork of the repo, create a new branch to contain the changes mad
 3. Set the "Branch name" to the current date (e.g. `2022-11-08`).
 4. In the bottom right of the panel, click "Create branch".
 
-### Create a Kubernetes cluster locally.
+### 2. Create a Kubernetes cluster locally.
 If you brought your own Kubernetes cluster to the lab, you can skip this section.
 
 Otherwise, you will be creating one on your local mahcine using `kind`.
@@ -109,7 +111,7 @@ Otherwise, you will be creating one on your local mahcine using `kind`.
    ```
     - Does kind always update the kubectl context? Maybe check that too
 
-### Launch an Argo CD instance.
+### 2. Launch an Argo CD instance.
 1. Create an account on the [Akuity Platform](https://akuity.io/signup).
 2. To log in with GitHub SSO, click "Continute with GitHub".
    1. You can also use Google SSO or a email and password combo. For the sake of the lab, I'm assuming you will be using GitHub.
@@ -121,9 +123,9 @@ Otherwise, you will be creating one on your local mahcine using `kind`.
 7. Near the top of the sidebar, click "Argo CD".
 8. In the top right, click "Create".
 9. Set the "Instance Name" to `cluster-manager`.
-10. Under the Version section, click the option correisponding to `v2.5`.
+10. Under the "Version" section, click the option correisponding to `v2.5`.
 11. Click "Create".
-12. In the dashboard the Argo CD instance, click "Settings".
+12. In the dashboard for the Argo CD instance, click "Settings".
 13. In the "General" section, find "Declarative Management" and enable it by clicking the toggle.
     1.  This enables using the Akuity Platform to host the Application CRs generated when using the App of Apps pattern or ApplicationSets. We will demonstrate this later in the lab.
 14. In the top right, click "Save".
@@ -138,7 +140,7 @@ Otherwise, you will be creating one on your local mahcine using `kind`.
 
 You will be presented with the Argo CD Applications dashboard.
 
-### Deploy an agent to the cluster.
+### 3. Deploy an agent to the cluster.
 1. Back on the Akuity Platform, in the top left of the dashboard for the Argo CD instance, click "Clusters".
 2. In the top right, click "Connect a cluster".
 3. Enter your *environment* name as the "Cluster Name".
@@ -164,30 +166,107 @@ You will be presented with the Argo CD Applications dashboard.
    argocd-repo-server-<replicaset-id>-<pod-id>                 1/1     Running   0          64s
    argocd-repo-server-<replicaset-id>-<pod-id>                 1/1     Running   0          64s
    ```
-   - Re-run the command to check for updates on the pod statuses.
+   - Re-run the `get pods` command to check for updates on the pod statuses.
 9.  Back on the Clusters dashboard, confirm that the cluster shows a green heart before the name, indicating a healthy status.
 
-### Create the App of Apps in Argo CD.
+### 4. Create an Application in Argo CD.
 1. Navigate back to the Argo CD UI, and click "NEW APP".
 2. In the top right, click "EDIT AS YAML".
-3. Paste the contents of `app-of-apps.yaml` in the root of the repo.
+3. Paste the contents of `helm-guestbook.yaml` (in the root of the repo).
+    ```yaml
+    apiVersion: argoproj.io/v1alpha1
+    kind: Application
+    metadata:
+      name: helm-guestbook
+      namespace: argocd
+    spec:
+      project: default
+      source:
+        repoURL: 'https://github.com/<github-username>/argocd-example-apps' # Update to match your fork.
+        path: helm-guestbook
+        targetRevision: HEAD
+      destination:
+        namespace: helm-guestbook
+        name: <environment-name> # Update this value.
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true
+    ```
+4. Update `spec.destination.name` to match your environment name (i.e., cluster name).
+5. Update `spec.source.repoURL` to match your repo name.
+6. Click "SAVE"
+7. Review the settings translated from YAML in Wizard. Then, in the top left, click "CREATE".
+8. Click on the Application card titled `argocd/helm-guestbook`.
+   1. In this state, the Application resource tree shows what was generated from the source repo URL and path defined. Because auto-sync is disable, the resources does not exist in the destination yet.
+   2. Click "APP DIFF" to see what manifests the Application rendered.
+9.  In the top bar, click "SYNC" then "SYNCHRONIZE". This will instruct Argo CD to create the resources defined by the Application.
+
+Afterwards, all resources in the tree will show a green checkmark. Indicating that they are present in the cluster.
+
+### 5. Enable auto-sync for the helm-guestbook Application.
+To automate the deployment of changes to the parent Application, you will enable the automated sync policy. This will cause any change to the Application source in the repo or Application itself, to be applied immediately.
+
+1.  In the top menu, click "APP DETAILS".
+2.  Under the "SYNC POLICY" section, click "ENABLE AUTO-SYNC".
+    1.  If the Application was out-of-sync, this would immediately trigger a sync.
+3.  In the top right of the App Details pane, click the X to close it.
+
+To demonstrate the auto-sync functionality, you will update the `image.tag` Helm parameter via the Argo CD UI.
+
+1.  In the top menu, click "APP DETAILS".
+2.  Go to the "PARAMETERS" tab and in the top right, click "EDIT"
+3.  Set the "image.tag" parameter to `0.2`. Then, in the top right, click "SAVE".
+    1.  This will cause the application to sync and do a rolling upgrade of the deployment.
+4.  In the top right of the App Details pane, click the X to close it.
+
+You will see the Application progressing and a new pod staring up with the `0.2` image tag. Then the old pod running `0.1` will be deleted.
+
+### 6. Create an App-of-Apps in Argo CD.
+1. Navigate back to the Argo CD UI, and click "NEW APP".
+2. In the top right, click "EDIT AS YAML".
+3. Paste the contents of `app-of-apps.yaml` (in the root of the repo).
+    ```yaml
+    apiVersion: argoproj.io/v1alpha1
+    kind: Application
+    metadata:
+      name: <environment-name> # Update to your cluster name.
+      namespace: argocd
+      finalizers:
+      - resources-finalizer.argocd.argoproj.io
+    spec:
+      destination:
+        name: in-cluster
+      project: default
+      source:
+        path: apps
+        repoURL: https://github.com/<github-username>/argocd-example-apps # Update to your repo URL.
+        targetRevision: HEAD
+        helm:
+          # Use the build enviroment provided by Argo CD to inherit the values used to
+          # template the child Applications.
+          parameters:
+          - name: spec.destination.name
+            value: $ARGOCD_APP_NAME
+          - name: spec.source.repoURL
+            value: $ARGOCD_APP_SOURCE_REPO_URL
+          - name: spec.source.targetRevision
+            value: $ARGOCD_APP_SOURCE_TARGET_REVISION
+    ```
 4. Update `metadata.name` to match your environment name (i.e., cluster name).
 5. Update `spec.source.repoURL` to match your repo name.
 6. Click "SAVE"
 7. Review the settings translated from YAML in Wizard. Then, in the top left, click "CREATE".
-8. Click on the Application card titled `argocd/<cluster-name>`.
-   1. In this state, the Application resource tree shows what was generated from the source repo URL and path defined. Because auto-sync is disable, the resources does not exist in the destination yet.
-9.  In the top bar, click "SYNC" then "SYNCHRONIZE". This will instruct Argo CD to create the resources defined by the Application. Afterwards, all resources in the tree will show a green checkmark. Indicating that they are present in the cluster.
+8. Click on the Application card titled `argocd/<environment-name>`.
 
-Should auto-sync be enabled for the children applications from the start?
+At this point, the Application will be out-of-sync, with a diff showing that it will add a label to the existing `helm-guestbook` Application to indicate that it's now managed by the App-of-Apps.
 
-### Change the target revision for the App-of-Apps Application.
-Currently the parent Application is tracking the `HEAD` of the repo. You will update this to track the branch you created after forking the repo. This will cause your cluster's environment to reflect your feature branch instead of `HEAD`.
+### 7. Change the target revision for the App-of-Apps.
+Currently the Application is tracking the `HEAD` of the repo. You will update this to track the branch created after forking the repo. This will cause your cluster's environment to reflect your feature branch instead of `HEAD`.
 
-<!-- 1. On the `<cluster-name>` Application resource, click the link button (arrow pointing out of the top right of a square). This will open the Application view for it. -->
+<!-- 1. On the `<environment-name>` Application resource, click the link button (arrow pointing out of the top right of a square). This will open the Application view for it. -->
 1.  In the top menu, click "APP DETAILS".
 2.  In the top right, click "EDIT".
-3.  Update the "TARGET REVISION" to the branch created after fokring the repo.
+3.  Update the "TARGET REVISION" to the branch created after forking the repo.
 4.  In the top right, click "SAVE".
 5.  In the top right of the App Details pane, click the X to close it.
 6.  The CURRENT SYNC STATUS will show "OutOfSync" indicating that it is out-of-sync.
@@ -203,13 +282,6 @@ Currently the parent Application is tracking the `HEAD` of the repo. You will up
   ```
 
 We are using the `targetRevision` of the Parent Application as a Helm parameter, to set the `targetRevision` of the child Applications (rendered by the Helm chart). When the `targetRevision` is changed on the parent Application, it will template the Helm chart with the new value. The child Applications will become out-of-sync due to their new `targetRevision`.
-### Enable auto-sync for the App-of-Apps Application.
-To automate the deployment of changes to the parent Application, you will enable the automated sync policy. This will cause any change to the Application source in the repo or Application itself, to be applied immediately.
-
-1.  In the top menu, click "APP DETAILS".
-2.  Under the "SYNC POLICY" section, click "ENABLE AUTO-SYNC".
-    1.  This will cause the application to immediately create the missing resources for the Application (i.e., the namespaces).
-3.  In the top right of the App Details pane, click the X to close it.
    <!-- 1. You can see this by clicking out of the App Details page and looking for the green checkmark on the resources. -->
 <!-- 3.  To the right of the "SELF HEAL", click "ENABLE". This will ensure that if a resource is deleted in the cluster (i.e., drift from the desired state) that Argo CD will automatically recreate it. This is important for namespaces as they are required for the Application using that namespace. -->
    <!-- 2. We will not enable "PRUNE RESOURCES" because the Application is managing other Application resources, who's deletion could be *catostraophic*. If you are confident in the processes surrounding changes to your environment configuratin repo, then this could be enabled allowing for automatic clean-up. -->
@@ -224,13 +296,10 @@ To automate the deployment of changes to the parent Application, you will enable
 1. Navigate to `file and line`.
 2. In the top right of the file, click the pencil icon to edit.
 3. Add `kustomize-guestbook` to the `applications` list.
-4. A commit message. For example `chore: deploy kustomize-guestbook to <cluster-name>`.
+4. A commit message. For example `chore: deploy kustomize-guestbook to <environment-name>`.
 5. In the bottom left, click "Commit changes".
 6. Switch back to the Argo CD UI.
 
 ### [bonus] Delete the cluster, recreate it, and deploy the agent to bootstrap it.
  - This could also demonstrate how the set up could easily be replicated in a hosted K8s environment with no additional configuration for the Applications or the firewall of the hosted environment.
  - The control plane allows for the cluster to be bootstrapped by simply deploying the Akuity agent.
-
-
-### sync and prune from the ui example?
