@@ -1,0 +1,59 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: hello-world-nginx
+spec:
+  generators:
+  - clusters:
+  ...
+  syncPolicy:
+    preserveResourcesOnDeletion: true
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      steps:
+        - matchExpressions:
+            - key: rolloutWave
+              operator: In
+              values:
+                - wave-1
+          maxUpdate: 0 # if undefined or 0, all applications matched are updated together
+        - matchExpressions:
+            - key: rolloutWave
+              operator: In
+              values:
+                - wave-2
+          maxUpdate: 1 # maxUpdate supports both integer and percentage string values
+  template:
+    metadata:
+      name: 'hello-world-nginx-{{name}}'
+      annotations:
+        indeed.com/argo-cd-instance: test-mgroot
+        indeed.com/applicationset: hello-world-nginx
+      labels:
+        rolloutWave: "{{criticality}}"  # label can be provided explicitly from a list generator or from cluster secret labels, etc
+    spec:
+      project: hello-world-nginx
+      source:
+        repoURL: <internal repo with a simple dummy nginx Deployment>
+        path: charts/nginx
+        targetRevision: master
+        helm:
+          releaseName: hello-world-nginx
+          values: |-
+            clusterName: {{name}}
+            deployment:
+              template:
+                annotations:
+                  test: "30"   # this field is incremented to test the progressive rollout capability, nginx pods become ready after 2 mins
+      destination:
+        name: '{{name}}'
+        namespace: hello-world-nginx--demo
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - ApplyOutOfSyncOnly=true
+          - CreateNamespace=true
