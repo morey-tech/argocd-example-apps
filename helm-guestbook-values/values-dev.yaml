@@ -5,3 +5,4 @@ resources:
   requests:
    cpu: 100m
    memory: 128M
+replicaCount: 3
