@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: helm-guestbook
+  name: helm-guestbook-dev
   namespace: argocd
 spec:
   project: default
@@ -14,7 +14,7 @@ spec:
       targetRevision: HEAD
       helm:
         valueFiles:
-        - $values/charts/prometheus/values.yaml
+        - $values/helm-guestbook-values/values-dev.yaml
     - ref: values
       repoURL: https://github.com/morey-tech/argocd-example-apps.git
       path: helm-guestbook-values
