@@ -23,5 +23,5 @@ spec:
         - $values/prometheus-values/values-dev.yaml
     - ref: values
       repoURL: https://github.com/morey-tech/argocd-example-apps.git
-      path: helm-guestbook-values
+      # path: helm-guestbook-values
       targetRevision: v2.6.0-rc
