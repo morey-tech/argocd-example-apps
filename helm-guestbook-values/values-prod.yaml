@@ -5,4 +5,4 @@ resources:
    cpu: 200m
    memory: 256M
 
-replicaCount: 3
+replicaCount: 5
