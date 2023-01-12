@@ -9,19 +9,12 @@ spec:
     server: https://kubernetes.default.svc
     namespace: default
   sources:
-    # - repoURL: https://github.com/argoproj/argocd-example-apps.git
-    #   path: helm-guestbook
-    #   targetRevision: HEAD
-    #   helm:
-    #     valueFiles:
-    #     - $values/helm-guestbook-values/values-dev.yaml
-    - repoURL: 'https://prometheus-community.github.io/helm-charts'
-      chart: prometheus
-      targetRevision: 15.7.1
+    - repoURL: https://github.com/argoproj/argocd-example-apps.git
+      path: helm-guestbook
+      targetRevision: master
       helm:
         valueFiles:
-        - $values/prometheus-values/values-dev.yaml
+        - $values/helm-guestbook-values/values-dev.yaml
     - ref: values
       repoURL: https://github.com/morey-tech/argocd-example-apps.git
-      # path: helm-guestbook-values
       targetRevision: v2.6.0-rc
