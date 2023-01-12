@@ -53,7 +53,7 @@ spec:
                 tag: 0.1
         - ref: values
           repoURL: https://github.com/morey-tech/argocd-example-apps.git
-          targetRevision: v2.6.0-rc2-issue-1
+          targetRevision: v2.6.0-rc
       destination:
         name: 'in-cluster'
         namespace: '{{.env}}'
