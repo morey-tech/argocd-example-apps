@@ -1,37 +1,40 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  labels:
+    app.kubernetes.io/name: argocd-repo-server
+    app.kubernetes.io/part-of: argocd
+    app.kubernetes.io/component: repo-server
   name: argocd-repo-server
-  # namespace: argocd
 spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-repo-server
   template:
     metadata:
       labels:
         app.kubernetes.io/name: argocd-repo-server
     spec:
+      serviceAccountName: argocd-repo-server
+      automountServiceAccountToken: false
       containers:
-      - name: my-plugin
-        command: [/var/run/argocd/argocd-cmp-server] # Entrypoint should be Argo CD lightweight CMP server i.e. argocd-cmp-server
-        image: busybox # This can be off-the-shelf or custom-built image
-        securityContext:
-          runAsNonRoot: true
-          runAsUser: 999
-        volumeMounts:
-          - mountPath: /var/run/argocd
-            name: var-files
-          - mountPath: /home/argocd/cmp-server/plugins
-            name: plugins
-          # Remove this volumeMount if you've chosen to bake the config file into the sidecar image.
-          - mountPath: /home/argocd/cmp-server/config/plugin.yaml
-            subPath: plugin.yaml
-            name: my-plugin-config
-          # Starting with v2.4, do NOT mount the same tmp volume as the repo-server container. The filesystem separation helps 
-          # mitigate path traversal attacks.
-          - mountPath: /tmp
-            name: cmp-tmp
+        - name: my-plugin
+          command: [/var/run/argocd/argocd-cmp-server]
+          image: busybox
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
+          volumeMounts:
+            - mountPath: /var/run/argocd
+              name: var-files
+            - mountPath: /home/argocd/cmp-server/plugins
+              name: plugins
+            - mountPath: /home/argocd/cmp-server/config/plugin.yaml
+              subPath: plugin.yaml
+              name: my-plugin-config
       volumes:
-      - configMap:
+        - configMap:
+            name: my-plugin-config
           name: my-plugin-config
-        name: my-plugin-config
-      - emptyDir: {}
-        name: cmp-tmp
+        - emptyDir: {}
+          name: cmp-tmp

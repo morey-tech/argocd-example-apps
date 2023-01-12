@@ -7,3 +7,5 @@ patches:
   - ./cmp-patch.yaml
 resources:
   - ./plugin-cm.yaml
+
+patchesStrategicMerge:
