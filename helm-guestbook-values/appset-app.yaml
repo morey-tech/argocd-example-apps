@@ -1,0 +1,14 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: helm-guestbook-appset
+  namespace: argocd
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  sources:
+    - repoURL: https://github.com/morey-tech/argocd-example-apps.git
+      targetRevision: v2.6.0-rc
+      path: applicationsets

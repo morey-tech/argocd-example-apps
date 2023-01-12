@@ -2,58 +2,61 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: hello-world-nginx
+  name: helm-guestbook
+  namespace: argocd
 spec:
   generators:
-  - clusters:
-      name: in-cluster
-  syncPolicy:
-    preserveResourcesOnDeletion: true
+  - list:
+      elements:
+      - env: dev
+      - env: qa
+      - env: prod
   strategy:
-    type: RollingUpdate
-    rollingUpdate:
+    type: RollingSync
+    rollingSync:
       steps:
         - matchExpressions:
-            - key: rolloutWave
+            - key: env
               operator: In
               values:
-                - wave-1
-          maxUpdate: 0 # if undefined or 0, all applications matched are updated together
+                - dev
+          #maxUpdate: 100%  # if undefined, all applications matched are updated together (default is 100%)
         - matchExpressions:
-            - key: rolloutWave
+            - key: env
               operator: In
               values:
-                - wave-2
-          maxUpdate: 1 # maxUpdate supports both integer and percentage string values
+                - qa
+          # maxUpdate: 0      # if 0, no matched applications will be updated
+        - matchExpressions:
+            - key: env
+              operator: In
+              values:
+                - prod
+          # maxUpdate: 10%    # maxUpdate supports both integer and percentage string values (rounds down, but floored at 1 Application for >0%)
+  goTemplate: true
   template:
     metadata:
-      name: 'hello-world-nginx-{{name}}'
-      annotations:
-        indeed.com/argo-cd-instance: test-mgroot
-        indeed.com/applicationset: hello-world-nginx
+      name: 'helm-guestbook-{{.env}}'
       labels:
-        rolloutWave: "{{criticality}}"  # label can be provided explicitly from a list generator or from cluster secret labels, etc
+        env: '{{.env}}'
     spec:
-      project: hello-world-nginx
-      source:
-        repoURL: <internal repo with a simple dummy nginx Deployment>
-        path: charts/nginx
-        targetRevision: master
-        helm:
-          releaseName: hello-world-nginx
-          values: |-
-            clusterName: {{name}}
-            deployment:
-              template:
-                annotations:
-                  test: "30"   # this field is incremented to test the progressive rollout capability, nginx pods become ready after 2 mins
+      project: default
+      sources:
+        - repoURL: https://github.com/argoproj/argocd-example-apps.git
+          path: helm-guestbook
+          targetRevision: master
+          helm:
+            valueFiles:
+            - $values/helm-guestbook-values/values-{{.env}}.yaml
+            values: |
+              image:
+                tag: 0.1
+        - ref: values
+          repoURL: https://github.com/morey-tech/argocd-example-apps.git
+          targetRevision: v2.6.0-rc2-issue-1
       destination:
-        name: '{{name}}'
-        namespace: hello-world-nginx--demo
+        name: 'in-cluster'
+        namespace: '{{.env}}'
       syncPolicy:
-        automated:
-          prune: true
-          selfHeal: true
         syncOptions:
-          - ApplyOutOfSyncOnly=true
           - CreateNamespace=true
