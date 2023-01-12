@@ -50,7 +50,7 @@ spec:
             - $values/helm-guestbook-values/values-{{.env}}.yaml
             values: |
               image:
-                tag: 0.1
+                tag: 0.2
         - ref: values
           repoURL: https://github.com/morey-tech/argocd-example-apps.git
           targetRevision: v2.6.0-rc
