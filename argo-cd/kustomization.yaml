@@ -4,8 +4,8 @@ bases:
   - https://raw.githubusercontent.com/argoproj/argo-cd/v2.6.0-rc2/manifests/install.yaml
 patches:
   - ./appset-rollouts-patch.yaml
-  - ./cmp-patch.yaml
 resources:
   - ./plugin-cm.yaml
 
 patchesStrategicMerge:
+  - ./cmp-patch.yaml
