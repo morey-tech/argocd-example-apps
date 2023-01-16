@@ -1,0 +1,15 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: default
+spec:
+  syncWindows:
+  - kind: deny
+    schedule: '00 21 * * *'
+    timeZone: EST
+    duration: 10h
+    applications:
+    - '*'  # any
+    namespaces:
+    - sleepme
+    manualSync: true

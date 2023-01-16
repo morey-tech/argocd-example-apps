@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: do-not-sleep
+  name: do-not-sleep
+  namespace: sleepme
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: do-not-sleep
+  template:
+    metadata:
+      labels:
+        app: do-not-sleep
+    spec:
+      containers:
+      - image: davidebianchi/echo-service
+        name: echo-service
+        resources: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: echo-service
+  name: echo-service
+  namespace: sleepme
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: echo-service
+  template:
+    metadata:
+      labels:
+        app: echo-service
+    spec:
+      containers:
+      - image: davidebianchi/echo-service
+        name: echo-service
+        resources: {}
+---
+apiVersion: kube-green.com/v1alpha1
+kind: SleepInfo
+metadata:
+  name: sleep-test
+  namespace: sleepme
+spec:
+  weekdays: "*"
+  sleepAt: "21:01"
+  wakeUpAt: "06:59"
+  timeZone: "America/Toronto"
+  excludeRef:
+    - apiVersion: "apps/v1"
+      kind: Deployment
+      name: do-not-sleep
