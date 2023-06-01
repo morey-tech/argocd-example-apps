@@ -4,6 +4,7 @@ metadata:
   name: guestbook-ui
   annotations:
     argocd.argoproj.io/sync-options: ServerSideApply=true
+    argocd.argoproj.io/sync-wave: 1
 spec:
   replicas: 1
   revisionHistoryLimit: 3
