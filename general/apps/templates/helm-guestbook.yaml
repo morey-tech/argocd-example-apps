@@ -11,6 +11,6 @@ spec:
     name: {{ .Values.spec.destination.name }}
   project: default
   source:
-    path: helm-guestbook
+    path: general/helm-guestbook
     repoURL: {{ .Values.spec.source.repoURL }}
     targetRevision: {{ .Values.spec.source.targetRevision }}

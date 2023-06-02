@@ -11,6 +11,6 @@ spec:
     name: {{ .Values.spec.destination.name }}
   project: default
   source:
-    path: sync-waves
+    path: general/sync-waves
     repoURL: {{ .Values.spec.source.repoURL }}
     targetRevision: {{ .Values.spec.source.targetRevision }}
